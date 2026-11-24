@@ -7,6 +7,7 @@ const errorHandler = require('./middleware/errorHandler');
 const { timing } = require('./prisma/client');
 
 const app = express();
+app.set('trust proxy', 1);
 
 app.use(helmet());
 app.use(cors({ origin: config.clientUrl.split(',').map((s) => s.trim()) }));
