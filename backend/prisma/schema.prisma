@@ -1,0 +1,175 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum Role {
+  ADMIN
+  USER
+}
+
+enum UserStatus {
+  ACTIVE
+  INACTIVE
+}
+
+enum UploadStatus {
+  SUCCESS
+  PARTIAL
+  FAILED
+}
+
+// Kategori file laporan yang diunggah
+enum KategoriRekap {
+  AKRUAL
+  SP2D
+}
+
+// Jenis nilai yang diinput manual (dengan riwayat per tanggal berlaku)
+enum InputJenis {
+  PAGU_SATKER  // pagu total satker
+  PAGU_PROGRAM // pagu total per program (kode = kode program, mis. EC)
+  PAGU_BELANJA // pagu total per jenis belanja (kode = 51, 52 atau 53)
+  TARGET_SP2D  // persentase target SP2D satker
+  TARGET_LINGKUP // persentase target SP2D seluruh lingkup (satker_id kosong; hanya Admin)
+  PAGU_REKAP   // pagu total satu baris rekap BRMP Perkebunan (kode = jalur kode, mis. HA|SDA.003|051|051.0A)
+  TARGET_REKAP // persentase target SP2D satu baris rekap BRMP Perkebunan (kode = jalur kode)
+}
+
+// Jenis baris pada laporan, ditentukan dari pola kode uraian
+enum RekapTipe {
+  TOTAL       // baris "JUMLAH SELURUHNYA"
+  PROGRAM     // mis. EC
+  KEGIATAN    // mis. EC.7911
+  KRO         // mis. AEF
+  RO          // mis. AEF.110
+  KOMPONEN    // mis. 051
+  SUBKOMPONEN // mis. 051.0A
+  AKUN        // 6 digit, mis. 521211 (belanja)
+  LAINNYA
+}
+
+// Satuan kerja. Satu satker bisa memiliki banyak pengguna.
+model Satker {
+  id         Int      @id @default(autoincrement())
+  name       String   @unique
+  created_at DateTime @default(now())
+
+  users   User[]
+  uploads Upload[]
+  rekap   RekapData[]
+  inputs  InputManual[]
+
+  @@map("satker")
+}
+
+model User {
+  id         Int        @id @default(autoincrement())
+  name       String
+  nip        String     @unique // hanya angka
+  password   String
+  role       Role       @default(USER)
+  status     UserStatus @default(ACTIVE)
+  satker_id  Int? // wajib untuk USER, kosong untuk ADMIN
+  created_at DateTime   @default(now())
+  updated_at DateTime   @updatedAt
+
+  satker  Satker?     @relation(fields: [satker_id], references: [id])
+  uploads Upload[]
+  rekap   RekapData[]
+  inputs  InputManual[]
+
+  @@index([satker_id])
+  @@map("users")
+}
+
+model Upload {
+  id                   Int          @id @default(autoincrement())
+  user_id              Int
+  satker_id            Int?
+  file_name            String
+  total_rows           Int          @default(0)
+  yellow_rows          Int          @default(0) // tidak dipakai lagi (deteksi warna dihapus), dipertahankan agar data lama aman
+  processed_rows       Int          @default(0)
+  upload_status        UploadStatus @default(SUCCESS)
+  error_message        String?
+  // Semua upload tetap tersimpan. Yang dihitung di dashboard dan pelaporan adalah upload terbaru
+  // per satker per kategori (pada rentang tanggal yang dipilih).
+  kategori             KategoriRekap @default(AKRUAL)
+  // Total laporan (baris "JUMLAH SELURUHNYA"), disimpan agar ringkasan per satker cepat.
+  // total_pagu_revisi = Pagu Efektif; total_sampai_periode = Realisasi Akrual / Realisasi SP2D menurut kategori
+  total_pagu_revisi    Decimal?     @db.Decimal(20, 2)
+  total_sampai_periode Decimal?     @db.Decimal(20, 2)
+  total_persentase     Decimal?     @db.Decimal(10, 2)
+  uploaded_at          DateTime     @default(now())
+
+  user   User        @relation(fields: [user_id], references: [id])
+  satker Satker?     @relation(fields: [satker_id], references: [id])
+  rekap  RekapData[]
+
+  @@index([user_id])
+  @@index([uploaded_at])
+  @@index([satker_id, kategori, uploaded_at])
+  @@map("uploads")
+}
+
+model RekapData {
+  id             Int       @id @default(autoincrement())
+  upload_id      Int
+  user_id        Int
+  satker_id      Int?
+  uploader_name  String
+  sheet_name     String?
+  row_number     Int?
+  kode           String?
+  tipe           RekapTipe @default(LAINNYA)
+  program_kode   String? // kode program induk, mis. EC
+  uraian         String
+  pagu_revisi    Decimal?  @db.Decimal(20, 2)
+  lock_pagu      Decimal?  @db.Decimal(20, 2)
+  periode_lalu   Decimal?  @db.Decimal(20, 2)
+  periode_ini    Decimal?  @db.Decimal(20, 2)
+  sampai_periode Decimal?  @db.Decimal(20, 2)
+  persentase     Decimal?  @db.Decimal(10, 2)
+  sisa_anggaran  Decimal?  @db.Decimal(20, 2)
+  raw_data       Json?
+  created_at     DateTime  @default(now())
+
+  upload Upload  @relation(fields: [upload_id], references: [id], onDelete: Cascade)
+  user   User    @relation(fields: [user_id], references: [id])
+  satker Satker? @relation(fields: [satker_id], references: [id])
+
+  @@index([upload_id])
+  @@index([upload_id, tipe])
+  @@index([user_id])
+  @@index([satker_id])
+  @@index([created_at])
+  @@map("rekap_data")
+}
+
+
+// Nilai input manual. Setiap perubahan menambah baris baru (riwayat); nilai yang berlaku pada suatu tanggal
+// adalah baris dengan berlaku_mulai terbaru yang tidak melewati tanggal itu.
+model InputManual {
+  id            Int        @id @default(autoincrement())
+  satker_id     Int? // kosong untuk TARGET_LINGKUP
+  jenis         InputJenis
+  kode          String     @default("") // kosong untuk PAGU_SATKER dan TARGET_SP2D
+  uraian        String? // nama program (untuk program yang ditambah manual)
+  nilai         Decimal    @db.Decimal(20, 2)
+  berlaku_mulai DateTime   @db.Date
+  user_id       Int
+  created_at    DateTime   @default(now())
+  updated_at    DateTime   @updatedAt
+
+  satker Satker? @relation(fields: [satker_id], references: [id], onDelete: Cascade)
+  user   User    @relation(fields: [user_id], references: [id])
+
+  @@unique([satker_id, jenis, kode, berlaku_mulai])
+  @@index([satker_id, jenis, kode])
+  @@map("input_manual")
+}

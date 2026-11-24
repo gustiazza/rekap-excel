@@ -1,0 +1,16 @@
+# Opsional: menjalankan PostgreSQL tanpa menginstalnya secara manual
+services:
+  db:
+    image: postgres:16
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: gusti123
+      POSTGRES_DB: rekap_excel
+    ports:
+      - "5432:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+
+volumes:
+  pgdata:
