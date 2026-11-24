@@ -1,5 +1,5 @@
 const crypto = require('crypto');
-const bcrypt = require('bcrypt');
+const bcrypt = require('bcryptjs');
 const prisma = require('../prisma/client');
 const asyncHandler = require('../utils/asyncHandler');
 const HttpError = require('../utils/httpError');
