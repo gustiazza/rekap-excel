@@ -49,7 +49,7 @@ export default function Login() {
   return (
     <div className="grid min-h-screen lg:grid-cols-2">
       <div className="hidden flex-col justify-between bg-slate-900 p-12 lg:flex">
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-0.5">
           <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl">
             <img src="/logo-kementan.svg" alt="Logo" className="h-8 w-8" />
           </div>

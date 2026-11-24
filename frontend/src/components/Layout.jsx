@@ -41,7 +41,7 @@ export default function Layout() {
           open ? 'translate-x-0' : '-translate-x-full'
         }`}
       >
-        <div className="flex items-center gap-2 px-5 py-6">
+        <div className="flex items-center gap-0.5 px-5 py-6">
           <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl">
             <img src="/logo-kementan.svg" alt="Logo" className="h-8 w-8" />
           </div>
