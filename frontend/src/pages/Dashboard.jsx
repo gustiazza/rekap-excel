@@ -11,6 +11,7 @@ import useManualInput from '../components/ManualInput';
 import DatePicker from '../components/DatePicker';
 import { BelanjaMatrixTable, GroupRekapTable, RekapSection, SatkerRekapTable } from '../components/RekapTables';
 import BrmpRekapTable from '../components/BrmpRekapTable';
+import SatkerChart from '../components/SatkerChart';
 
 
 /* ------------------------------------------------------------------ */
@@ -406,8 +407,17 @@ export default function Dashboard() {
             rows={data?.per_satker}
             total={data?.totals}
             loading={loading}
+            refDate={data?.ref}
             manual={{ canEdit: canEditSatker, canEditTotal: isAdmin, edit: manual.edit, history: manual.history }}
           />
+        </RekapSection>
+
+        {/* GRAFIK PERBANDINGAN PER SATKER */}
+        <RekapSection
+          title="Grafik Perbandingan per Satker"
+          subtitle="Pagu Efektif, Realisasi SP2D, dan Target SP2D (Rp) tiap satker. Gap di atas tiap satker adalah % SP2D dikurangi % Target SP2D."
+        >
+          <SatkerChart rows={data?.per_satker} loading={loading} />
         </RekapSection>
 
         {/* REALISASI AKRUAL PER SATKER PER JENIS BELANJA */}
@@ -518,6 +528,7 @@ export default function Dashboard() {
             data={brmp} 
             search={brmpSearch} 
             loading={!brmp}
+            refDate={brmp?.ref}
             manual={{ canEdit: canEditSatker, edit: manual.edit, history: manual.history }}
           />
         </RekapSection>

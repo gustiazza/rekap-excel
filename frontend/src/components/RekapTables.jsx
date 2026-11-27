@@ -1,6 +1,8 @@
 import { SkeletonRows } from './Skeleton';
 import { fmtNum, fmtPct, fmtShortDate } from '../utils/format';
 import { card, td, th } from '../utils/ui';
+import { THEME, groupColor, headStyle } from '../utils/tableTheme';
+import { targetLabel } from '../utils/refDate';
 
 /*
  * Tabel rekap yang dipakai bersama oleh Dashboard dan Pelaporan.
@@ -45,7 +47,7 @@ export function RekapSection({ title, subtitle, actions, children }) {
     <section className="space-y-3">
       <div className="flex flex-wrap items-end justify-between gap-3">
         <div>
-          <h2 className="text-lg font-bold text-slate-900">{title}</h2>
+          <h2 className="text-lg font-extrabold text-slate-900">{title}</h2>
           {subtitle && <p className="mt-1 text-sm text-slate-500">{subtitle}</p>}
         </div>
         {actions}
@@ -107,25 +109,26 @@ const uploadInfo = (label, u) => `${label} ${u ? fmtShortDate(u.uploaded_at) : '
 /* REKAP PER SATKER                                                    */
 /* ------------------------------------------------------------------ */
 
-const SATKER_WIDTHS = [4, 16, 12.5, 12.5, 12.5, 8, 12.5, 8, 7, 7];
+const SATKER_WIDTHS = [4, 16, 12, 12, 12, 8, 12, 8, 9, 7];
+const GREEN_HEAD = headStyle(THEME.green.head);
 
 // manual (opsional): { canEdit(satkerId), edit(spec), history(spec) } membuat Pagu Total dan % Target dapat diubah langsung
 // manual (opsional): { canEdit(satkerId), edit(spec), history(spec) } membuat Pagu Total dan % Target dapat diubah langsung
-export function SatkerRekapTable({ rows = [], total, loading = false, skeletonRows = 5, manual, totalLabel = 'Lingkup BRMP Perkebunan' }) {
+export function SatkerRekapTable({ rows = [], total, loading = false, skeletonRows = 5, manual, totalLabel = 'Lingkup BRMP Perkebunan', refDate }) {
   return (
     <Shell minWidth={1320} widths={SATKER_WIDTHS}>
       <thead>
         <tr>
-          <th className={hc}>No</th>
-          <th className={`${th} text-left`}>Satker</th>
-          <th className={hc}>Pagu Total (Rp)</th>
-          <th className={hc}>Pagu Efektif (Rp)</th>
-          <th className={hc}>Realisasi Akrual (Rp)</th>
-          <th className={hc}>% Akrual thd Pagu Efektif</th>
-          <th className={hc}>Realisasi SP2D (Rp)</th>
-          <th className={hc}>% SP2D thd Pagu Efektif</th>
-          <th className={hc}>% Target SP2D</th>
-          <th className={hc}>Gap</th>
+          <th className={hc} style={GREEN_HEAD}>No</th>
+          <th className={`${th} text-left`} style={GREEN_HEAD}>Satker</th>
+          <th className={hc} style={GREEN_HEAD}>Pagu Total (Rp)</th>
+          <th className={hc} style={GREEN_HEAD}>Pagu Efektif (Rp)</th>
+          <th className={hc} style={GREEN_HEAD}>Realisasi Akrual (Rp)</th>
+          <th className={hc} style={GREEN_HEAD}>% Akrual thd Pagu Efektif</th>
+          <th className={hc} style={GREEN_HEAD}>Realisasi SP2D (Rp)</th>
+          <th className={hc} style={GREEN_HEAD}>% SP2D thd Pagu Efektif</th>
+          <th className={hc} style={GREEN_HEAD}>{targetLabel(refDate)}</th>
+          <th className={hc} style={GREEN_HEAD}>Gap</th>
         </tr>
       </thead>
 
@@ -136,10 +139,10 @@ export function SatkerRekapTable({ rows = [], total, loading = false, skeletonRo
 
         {/* BARIS TOTAL (Lingkup) DI ATAS, SEPERTI LAPORAN EXCEL */}
         {!loading && total && rows.length > 0 && (
-          <tr className="bg-amber-50 font-semibold text-slate-900">
+          <tr className="font-semibold text-slate-900" style={{ backgroundColor: THEME.green.total }}>
             <td className={`${td} text-left`} colSpan={2}>
               {totalLabel}
-              <span className="mt-0.5 block text-xs font-normal text-slate-500">
+              <span className="mt-0.5 block text-xs font-normal text-slate-600">
                 Akrual {total.satker_akrual}/{total.satker_total} satker · SP2D {total.satker_sp2d}/{total.satker_total} satker
               </span>
             </td>
@@ -323,7 +326,7 @@ export const DEFAULT_COLUMNS = [
 ];
 
 const cellCls = 'px-4 py-3 text-xs whitespace-nowrap text-center tabular-nums';
-const subTh = 'px-3 py-2.5 text-[11px] font-semibold leading-tight text-slate-500 text-center !whitespace-normal bg-slate-50';
+const subTh = 'px-3 py-2.5 text-[11px] font-bold leading-tight text-center !whitespace-normal';
 
 // kategori: 'AKRUAL' | 'SP2D'. manual (opsional): { canEdit(satkerId), edit(spec), history(spec) } untuk Pagu Total.
 export function BelanjaMatrixTable({ data, kategori = 'AKRUAL', loading = false, skeletonRows = 5, manual, totalLabel = 'Lingkup BRMP Perkebunan' }) {
@@ -354,28 +357,31 @@ export function BelanjaMatrixTable({ data, kategori = 'AKRUAL', loading = false,
 
           <thead>
             <tr>
-              <th rowSpan={2} className={`${th} sticky left-0 z-20 bg-slate-50 text-center`}>
+              <th rowSpan={2} className={`${th} sticky left-0 z-20 text-center`} style={headStyle(THEME.matrix.satker)}>
                 No
               </th>
-              <th rowSpan={2} className={`${th} sticky left-[44px] z-20 bg-slate-50 text-left`}>
+              <th rowSpan={2} className={`${th} sticky left-[44px] z-20 text-left`} style={headStyle(THEME.matrix.satker)}>
                 Satker
               </th>
               {groups.map((g, gi) => (
                 <th
                   key={g.kode}
                   colSpan={g.fields.length}
-                  className={`border-b border-l border-slate-200 px-2 py-2.5 text-center text-xs font-bold ${
-                    gi === 2 ? 'bg-amber-100 text-amber-900' : gi === 1 ? 'bg-slate-200 text-slate-800' : 'bg-slate-100 text-slate-800'
-                  }`}
+                  className="border-b border-l border-white/30 px-2 py-2.5 text-center text-xs font-bold"
+                  style={headStyle(groupColor(g.kode, gi))}
                 >
                   {g.label}
                 </th>
               ))}
             </tr>
             <tr>
-              {groups.map((g) =>
+              {groups.map((g, gi) =>
                 g.fields.map((f, idx) => (
-                  <th key={`${g.kode}-${f.key}`} className={`${subTh} ${sep(idx)}`}>
+                  <th
+                    key={`${g.kode}-${f.key}`}
+                    className={`${subTh} ${idx === 0 ? 'border-l border-white/30' : ''}`}
+                    style={headStyle(groupColor(g.kode, gi))}
+                  >
                     {f.label}
                   </th>
                 ))
@@ -390,8 +396,8 @@ export function BelanjaMatrixTable({ data, kategori = 'AKRUAL', loading = false,
 
             {/* BARIS TOTAL (Lingkup) DI ATAS, SEPERTI LAPORAN EXCEL */}
             {!loading && data && rows.length > 0 && (
-              <tr className="bg-amber-50 font-semibold text-slate-900">
-                <td colSpan={2} className={`${td} sticky left-0 z-10 bg-amber-50 text-left`}>
+              <tr className="font-semibold text-slate-900" style={{ backgroundColor: THEME.matrix.total }}>
+                <td colSpan={2} className={`${td} sticky left-0 z-10 text-left`} style={{ backgroundColor: THEME.matrix.total }}>
                   {totalLabel}
                 </td>
                 {groups.map((g) =>

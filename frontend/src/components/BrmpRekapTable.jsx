@@ -2,6 +2,8 @@ import { SkeletonRows } from './Skeleton';
 import { GapCell, ManualCell } from './RekapTables';
 import { fmtNum, fmtPct } from '../utils/format';
 import { card, td, th } from '../utils/ui';
+import { LEVEL_COLORS, THEME, headStyle } from '../utils/tableTheme';
+import { targetLabel } from '../utils/refDate';
 
 /*
  * Rekap khusus BRMP Perkebunan: baris Program, RO, Komponen dan Sub-komponen.
@@ -17,15 +19,16 @@ const hc = `${th} !whitespace-normal !px-3 text-center leading-tight`;
 const num = `${td} !px-3 whitespace-nowrap text-center tabular-nums`;
 
 // No, Kode, Uraian, Pagu Total, Pagu Efektif, Realisasi Akrual, % Akrual, Realisasi SP2D, % SP2D, Sisa Anggaran, % Target, Gap
-const WIDTHS = [44, 100, 320, 148, 148, 148, 88, 148, 88, 164, 104, 92];
+const WIDTHS = [44, 100, 320, 148, 148, 148, 88, 148, 88, 164, 150, 92];
+const GREEN_HEAD = headStyle(THEME.green.head);
 const MIN_WIDTH = WIDTHS.reduce((a, b) => a + b, 0);
 
 // Tampilan tiap tingkat: warna latar, ketebalan huruf, dan menjorok uraian
 const LEVEL = {
-  PROGRAM: { row: 'bg-slate-100 font-semibold text-slate-900', indent: 0 },
-  RO: { row: 'bg-slate-50 font-medium text-slate-900', indent: 1 },
-  KOMPONEN: { row: 'bg-white font-medium text-slate-800', indent: 2 },
-  SUBKOMPONEN: { row: 'bg-white text-slate-700', indent: 3 },
+  PROGRAM: { row: 'font-bold text-slate-900', indent: 0 },
+  RO: { row: 'font-semibold text-slate-900', indent: 1 },
+  KOMPONEN: { row: 'font-medium text-slate-800', indent: 2 },
+  SUBKOMPONEN: { row: 'text-slate-700', indent: 3 },
 };
 
 function Message({ children }) {
@@ -38,7 +41,7 @@ function Message({ children }) {
   );
 }
 
-export default function BrmpRekapTable({ data, loading = false, manual, search = '' }) {
+export default function BrmpRekapTable({ data, loading = false, manual, search = '', refDate }) {
   const satker = data?.satker;
   const top = data?.top;
   const rows = data?.rows ?? [];
@@ -77,18 +80,18 @@ export default function BrmpRekapTable({ data, loading = false, manual, search =
 
           <thead>
             <tr>
-              <th className={hc}>No</th>
-              <th className={`${th} text-left`}>Kode</th>
-              <th className={`${th} text-left`}>Program / RO / Komponen / Sub Komponen</th>
-              <th className={hc}>Pagu Total (Rp)</th>
-              <th className={hc}>Pagu Efektif (Rp)</th>
-              <th className={hc}>Realisasi Akrual (Rp)</th>
-              <th className={hc}>% Akrual</th>
-              <th className={hc}>Realisasi SP2D (Rp)</th>
-              <th className={hc}>% SP2D</th>
-              <th className={hc}>Sisa Anggaran dari Realisasi Akrual (Rp)</th>
-              <th className={hc}>% Target SP2D</th>
-              <th className={hc}>Gap</th>
+              <th className={hc} style={GREEN_HEAD}>No</th>
+              <th className={`${th} text-left`} style={GREEN_HEAD}>Kode</th>
+              <th className={`${th} text-left`} style={GREEN_HEAD}>Program / RO / Komponen / Sub Komponen</th>
+              <th className={hc} style={GREEN_HEAD}>Pagu Total (Rp)</th>
+              <th className={hc} style={GREEN_HEAD}>Pagu Efektif (Rp)</th>
+              <th className={hc} style={GREEN_HEAD}>Realisasi Akrual (Rp)</th>
+              <th className={hc} style={GREEN_HEAD}>% Akrual</th>
+              <th className={hc} style={GREEN_HEAD}>Realisasi SP2D (Rp)</th>
+              <th className={hc} style={GREEN_HEAD}>% SP2D</th>
+              <th className={hc} style={GREEN_HEAD}>Sisa Anggaran dari Realisasi Akrual (Rp)</th>
+              <th className={hc} style={GREEN_HEAD}>{targetLabel(refDate)}</th>
+              <th className={hc} style={GREEN_HEAD}>Gap</th>
             </tr>
           </thead>
 
@@ -107,7 +110,7 @@ export default function BrmpRekapTable({ data, loading = false, manual, search =
 
             {/* BARIS JUDUL: TOTAL SATKER (angka sama dengan tabel Rekap per satker) */}
             {!loading && satker && top && rows.length > 0 && (
-              <tr className="bg-amber-50 font-semibold text-slate-900">
+              <tr className="font-semibold text-slate-900" style={{ backgroundColor: THEME.green.total }}>
                 <td className={`${td} text-left`} colSpan={3}>
                   {satker.name}
                 </td>
@@ -134,7 +137,7 @@ export default function BrmpRekapTable({ data, loading = false, manual, search =
               visible.map(({ r, i }) => {
                 const lv = LEVEL[r.level] || LEVEL.SUBKOMPONEN;
                 return (
-                  <tr key={`${r.key}-${i}`} className={lv.row}>
+                  <tr key={`${r.key}-${i}`} className={lv.row} style={{ backgroundColor: LEVEL_COLORS[r.level] || LEVEL_COLORS.SUBKOMPONEN }}>
                     <td className={`${td} text-center font-normal text-slate-500`}>{i + 1}</td>
                     <td className={`${td} text-left whitespace-nowrap`}>{r.kode}</td>
                     <td className={`${td} text-left`} style={{ paddingLeft: 16 + lv.indent * 16 }}>
