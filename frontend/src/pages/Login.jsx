@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Navigate, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { errMsg } from '../services/api';
@@ -16,6 +16,21 @@ export default function Login() {
   const [fieldErrors, setFieldErrors] = useState({});
   const [error, setError] = useState('');
   const [busy, setBusy] = useState(false);
+const [slow, setSlow] = useState(false);
+
+// Bangunkan backend (SnapDeploy tidur bila lama tidak dipakai) selagi pengguna mengisi form
+useEffect(() => {
+  const api = import.meta.env.VITE_API_URL || '/api';
+  const root = api.replace(/\/api\/?$/, '');
+  fetch(`${root}/health`, { mode: 'no-cors' }).catch(() => {});
+}, []);
+
+// Beri tahu pengguna kalau login lebih lama dari biasanya
+useEffect(() => {
+  if (!busy) return setSlow(false);
+  const t = setTimeout(() => setSlow(true), 4000);
+  return () => clearTimeout(t);
+}, [busy]);
 
   if (user) return <Navigate to="/" replace />;
 
@@ -104,7 +119,7 @@ export default function Login() {
           </Field>
 
           <button className={`${btnPrimary} w-full`} disabled={busy}>
-            {busy ? 'Memproses…' : 'Login'}
+            {busy ? (slow ? 'Menunggu server aktif, mohon tunggu…' : 'Memproses…') : 'Login'}
           </button>
         </form>
       </div>
